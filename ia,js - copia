@@ -1,0 +1,72 @@
+(function (Scratch) {
+    'use strict';
+
+    if (!Scratch.extensions.unsandboxed) {
+        throw new Error('Esta extensión debe ejecutarse sin sandbox.');
+    }
+
+    class MiIA {
+        constructor() {
+            this.respuestaIA = '';
+        }
+
+        getInfo() {
+            return {
+                id: 'miia',
+                name: 'Mi IA',
+                color1: '#8e44ad',
+                color2: '#6c3483',
+
+                blocks: [
+                    {
+                        opcode: 'preguntar',
+                        blockType: Scratch.BlockType.COMMAND,
+                        text: 'preguntar a la IA [PREGUNTA]',
+                        arguments: {
+                            PREGUNTA: {
+                                type: Scratch.ArgumentType.STRING,
+                                defaultValue: 'Hola'
+                            }
+                        }
+                    },
+                    {
+                        opcode: 'obtenerRespuesta',
+                        blockType: Scratch.BlockType.REPORTER,
+                        text: 'respuesta de la IA'
+                    }
+                ]
+            };
+        }
+
+        async preguntar(args) {
+            try {
+                const respuesta = await Scratch.fetch(
+                    'http://127.0.0.1:5000/pregunta',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            pregunta: String(args.PREGUNTA)
+                        })
+                    }
+                );
+
+                const datos = await respuesta.json();
+
+                this.respuestaIA = datos.respuesta || 'No recibí respuesta.';
+            } catch (error) {
+                console.error(error);
+                this.respuestaIA = 'Error al conectar con la IA.';
+            }
+        }
+
+        obtenerRespuesta() {
+            return this.respuestaIA;
+        }
+    }
+
+    Scratch.extensions.register(new MiIA());
+
+})(Scratch);
